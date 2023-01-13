@@ -1,0 +1,1 @@
+module.exports = 'apikey from https://xivapi.com/account here'
