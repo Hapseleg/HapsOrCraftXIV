@@ -1,0 +1,25 @@
+{
+  "name": "hapseorcraftxiv",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "dependencies": {
+    "@xivapi/js": "^0.4.1",
+    "universalis.js": "^2.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hapseleg/HapseOrCraftXIV.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Hapseleg/HapseOrCraftXIV/issues"
+  },
+  "homepage": "https://github.com/Hapseleg/HapseOrCraftXIV#readme"
+}
