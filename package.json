@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
-  "type": "module",
+
   "dependencies": {
     "@xivapi/js": "^0.4.1",
-    "universalis.js": "^2.0.0"
+    "node-fetch": "^3.3.0"
   },
   "devDependencies": {},
   "scripts": {
