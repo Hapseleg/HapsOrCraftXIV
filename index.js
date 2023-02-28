@@ -84,17 +84,22 @@ function printInfo(recipe) {
   });
 }
 
-function getIngredientsAndRecipes(recipeRes) {
-  let res = { 'ingredientAmount': [], 'ingredients': [], 'recipes': [] }
-  for (let i = 0; i <= 9; i++) {
-    if (recipeRes["amount_ingredient" + i] != 0)
-      res.ingredientAmount.push(recipeRes["amount_ingredient" + i])
 
-    if (recipeRes["item_ingredient" + i] != null)
-      res.ingredients.push(recipeRes["item_ingredient" + i])
+function getIngredientsAndRecipes(recipeRes) {
+  let res = { ingredients: {}, recipes: {} }
+  for (let i = 0; i <= 9; i++) {
+    // if (recipeRes["amount_ingredient" + i] != 0)
+    //   res.ingredientAmount.push(recipeRes["amount_ingredient" + i])
+
+    if (recipeRes["item_ingredient" + i] != null) {
+      recipeRes["item_ingredient" + i].ingredientAmount = recipeRes["amount_ingredient" + i]
+      res.ingredients[recipeRes["item_ingredient" + i].id] = recipeRes["item_ingredient" + i]
+    }
+    // res.ingredients.push(recipeRes["item_ingredient" + i])
 
     if (recipeRes["item_ingredient_recipe" + i] != null)
-      res.recipes.push(recipeRes["item_ingredient_recipe" + i])
+      res.recipes[recipeRes["item_ingredient_recipe" + i].id] = recipeRes["item_ingredient_recipe" + i]
+      // res.recipes.push(recipeRes["item_ingredient_recipe" + i])
   }
   return res
 }
@@ -127,9 +132,15 @@ async function getXVIAPIInfo(itemName, callback) {
 
 function getItemIds(ing) {
   let ids = ''
-  ing.ingredients.forEach(element => {
-    ids += element.id + ','
-  });
+  for (const property in ing.ingredients) {
+    // console.log(`${property}: ${ing.ingredients[property].id}`);
+    // console.log(ing.ingredients[property].id)
+    ids += ing.ingredients[property].id + ','
+  }
+  
+  // ing.ingredients.forEach(element => {
+  //   ids += element.id + ','
+  // });
   return ids
 }
 
@@ -154,16 +165,27 @@ function getUniversalisData(worldDcRegion, ids, listingsAmount, callback) {
   })
 }
 
+/*
 
+*/
 
+function avgPrice(listings) {
+  let price = 0
+  listings.forEach(element => {
+    price += element.pricePerUnit
+  });
+  price = Math.round(price / listings.length)
+  return price
+}
 
 var findThisItem = "Integral Lumber"
 
 getXVIAPIInfo(findThisItem, function (res) {
   let ing = getIngredientsAndRecipes(res)
-  
+  // console.log(getItemIds(ing))
+  // console.log(ing.ingredients)
   getUniversalisData('Light', getItemIds(ing), 30, function (unires) {
-    console.log(unires)
+    console.log(avgPrice(unires.items['10'].listings))
   })
 })
 
