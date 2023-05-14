@@ -2,16 +2,29 @@
 // import xivapikey from './module1.mjs'
 // import XIVAPI from './module1.mjs'
 //const fetch = require('node-fetch')
-const https = require('https')
-const fs = require('fs')
+import { xivapi, express, bodyParser, exphbs } from './cjs-importer.cjs';
+// console.log(typeof(express))
+// console.log(typeof(express().static))
 
-const xivapikey = require('./config/xivapikey')
-const XIVAPI = require('@xivapi/js')
-const xiv = new XIVAPI({
-  private_key: xivapikey,
-  language: 'en',
-  snake_case: true
-})
+import fetch from './mjs-importer.mjs';
+
+
+// const https = require('https')
+// const fs = require('fs')
+import https from 'https'
+import fs from 'fs'
+
+
+// const xivapikey = require('./config/xivapikey')
+import xivapikey from './config/xivapikey.js'
+// const XIVAPI = require('@xivapi/js')
+// const xiv = new XIVAPI({
+//   private_key: xivapikey,
+//   language: 'en',
+//   snake_case: false
+// })
+
+const xiv = xivapi(xivapikey, 'en', true)
 
 // import xivapikey from './config/xivapikey.js'
 // import XIVAPI from '@xivapi/js'
@@ -39,7 +52,7 @@ https://xivapi.com/item/36194 log
 https://xivapi.com/item/36200 lumber
  */
 
-async function getItemIdAndRecipeId(nameOfItem, callback) {
+function getItemIdAndRecipeId(nameOfItem, callback) {
   console.log("getItemIdAndRecipeId")
   let itemInfo = {
     itemId: 0,
@@ -48,7 +61,7 @@ async function getItemIdAndRecipeId(nameOfItem, callback) {
   }
 
   xiv.search(nameOfItem).then((response) => {
-    // console.log(response)
+    console.log(response)
     response.results.forEach(element => {
       if (element.url_type == 'Item') {
         itemInfo.itemId = element.id
@@ -63,7 +76,7 @@ async function getItemIdAndRecipeId(nameOfItem, callback) {
   })
 }
 
-async function getRecipeData(recipeId, callback) {
+function getRecipeData(recipeId, callback) {
   console.log("getRecipeData")
   xiv.data.get('recipe', recipeId).then((res) => {
     callback(res)
@@ -101,14 +114,15 @@ function getIngredientsAndRecipes(recipeRes) {
 
     if (recipeRes["item_ingredient_recipe" + i] != null)
       res.recipes[recipeRes["item_ingredient_recipe" + i].id] = recipeRes["item_ingredient_recipe" + i]
-      // res.recipes.push(recipeRes["item_ingredient_recipe" + i])
+    // res.recipes.push(recipeRes["item_ingredient_recipe" + i])
   }
   return res
 }
 
-async function getXVIAPIInfo(itemName, callback) {
+function getXVIAPIInfo(itemName, callback) {
+  console.log("getXVIAPIInfo")
   getItemIdAndRecipeId(itemName, function (res) {
-    console.log(res)
+    // console.log(res)
 
     getRecipeData(res.recipeId, function (recipeRes) {
       let recipe = recipeRes
@@ -120,6 +134,7 @@ async function getXVIAPIInfo(itemName, callback) {
       // console.log(recipe.name)
       // console.log(getIngredientsAndRecipes(recipe))
       //printInfo(recipe)
+      fs.writeFileSync('./recipe.json', JSON.stringify(recipe))
       callback(recipe)
     })
     // xiv.data.get('recipe',res.recipeId).then((recipeRes) => {
@@ -139,16 +154,18 @@ function getItemIds(ing) {
     // console.log(ing.ingredients[property].id)
     ids += ing.ingredients[property].id + ','
   }
-  
+
   // ing.ingredients.forEach(element => {
   //   ids += element.id + ','
   // });
+  fs.writeFileSync('./ids.json', JSON.stringify(ids))
   return ids
 }
 
 //-------------------------------------------Universalis-------------------------------------------
 
 function getUniversalisData(worldDcRegion, ids, listingsAmount, callback) {
+  console.log("getUniversalisData")
   let url = 'https://universalis.app/api/v2/' + worldDcRegion + '/' + ids.toString() + '/?listings=' + listingsAmount
   console.log(url)
 
@@ -171,23 +188,141 @@ function getUniversalisData(worldDcRegion, ids, listingsAmount, callback) {
 
 */
 
-function avgPrice(listings) {
-  let price = 0
-  listings.forEach(element => {
-    price += element.pricePerUnit
-  });
-  price = Math.round(price / listings.length)
+function avgPrice(items, listings = 10) {
+  let price = {}
+  let current = 0
+  for (const item in items) {
+
+    items[item].listings.forEach(element => {
+      current += element.pricePerUnit
+    });
+    console.log(current)
+    price[item] = current / listings
+    current = 0
+    // for (const listing in items[item].listings) {
+    //   console.log(pricePerUnit)
+    // }
+  }
+  // price = Math.round(price / items.length)
   return price
 }
 
 var findThisItem = "Integral Lumber"
 
-getXVIAPIInfo(findThisItem, function (res) {
-  let ing = getIngredientsAndRecipes(res)
-  // console.log(getItemIds(ing))
-  // console.log(ing.ingredients)
-  getUniversalisData('Light', getItemIds(ing), 30, function (unires) {
-    console.log(avgPrice(unires.items['10'].listings))
+var test = 0
+// getXVIAPIInfo(findThisItem, function (res) {
+//   let ing = getIngredientsAndRecipes(res)
+//   // console.log(getItemIds(ing))
+//   // console.log(ing.ingredients)
+//   getUniversalisData('Light', getItemIds(ing), 30, function (unires) {
+//     console.log(avgPrice(unires.items['10'].listings))
+//     test = avgPrice(unires.items['10'].listings)
+//   })
+// })
+
+// var express = require('express');
+// var bodyParser = require('body-parser')
+// var exphbs = require('express-handlebars')
+
+var app = express()
+app.use(express.static('public'))
+var hbs = exphbs.create(
+  {
+    defaultLayout: 'main',
+    helpers: {
+      toJSON: function (object) {
+        console.log(object)
+        return JSON.stringify(object);
+      }
+    },
+    partialsDir: [
+      // './shared/templates/',
+      './views/partials/'
+    ]
+  });
+app.engine('handlebars', hbs.engine)
+app.set('view engine', 'handlebars');
+
+app.use(bodyParser.urlencoded({ extended: true })) // parse application/x-www-form-urlencoded
+app.use(bodyParser.json()) // parse application/json
+
+//https://github.com/ericf/express-handlebars/blob/master/examples/advanced/server.js
+// Middleware to expose the app's shared templates to the client-side of the app
+// for pages which need them.
+// function exposeTemplates(req, res, next) {
+//   // Uses the `ExpressHandlebars` instance to get the get the **precompiled**
+//   // templates which will be shared with the client-side of the app.
+//   hbs.getTemplates('shared/templates/', {
+//       cache      : app.enabled('view cache'),
+//       precompiled: true
+//   }).then(function (templates) {
+//       // RegExp to remove the ".handlebars" extension from the template names.
+//       var extRegex = new RegExp(hbs.extname + '$');
+
+//       // Creates an array of templates which are exposed via
+//       // `res.locals.templates`.
+//       templates = Object.keys(templates).map(function (name) {
+//           return {
+//               name    : name.replace(extRegex, ''),
+//               template: templates[name]
+//           };
+//       });
+
+//       // Exposes the templates during view rendering.
+//       if (templates.length) {
+//           res.locals.templates = templates;
+//       }
+
+//       setImmediate(next);
+//   })
+//   .catch(next);
+// }
+
+// app.get('/', (req, res) => {
+//   getXVIAPIInfo(findThisItem, function (xviapiRes) {
+//     let ing = getIngredientsAndRecipes(xviapiRes)
+//     // console.log(getItemIds(ing))
+//     // console.log(ing.ingredients)
+//     getUniversalisData('Light', getItemIds(ing), 30, function (unires) {
+//       console.log(avgPrice(unires.items['10'].listings))
+//       test = avgPrice(unires.items['10'].listings)
+//       res.render("home", {
+//         test: test
+//       })
+//     })
+//   })
+// })
+app.get('/favicon.ico', (req, res) => res.status(204))
+
+app.get('/', (req, res) => {
+  // console.log("req params: " + JSON.stringify(req))
+  res.render("home", {})
+})
+
+// app.get('/:itemName', (req, res) => {
+app.get('/getItemInfo', (req, res) => {
+  console.log(req.query)
+  // console.log(req.params)
+  // console.log(req)
+  // res.render("home")
+  getXVIAPIInfo(req.query.itemName, function (xviapiRes) {
+    // console.log(xviapiRes)
+    let ing = getIngredientsAndRecipes(xviapiRes)
+    // fs.writeFileSync('./ing.json', JSON.stringify(ing))
+    // console.log(getItemIds(ing))
+    // console.log(ing.ingredients)
+    getUniversalisData('Light', getItemIds(ing), 30, function (unires) {
+      // fs.writeFileSync('./unires.json', JSON.stringify(unires))
+      // console.log(avgPrice(unires.items['16'].listings))
+      res.render("home", {
+        ing: ing,
+        avg: avgPrice(unires.items),
+        item: unires
+      })
+    })
   })
 })
 
+var port = 3002
+console.log('started on port ' + port)
+app.listen(port)
